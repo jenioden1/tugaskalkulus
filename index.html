@@ -33,25 +33,25 @@
       </div>
       <button
         id="calculateButton"
-        class="bg-blue-500 text-white p-2 rounded hover-bg-blue-600 cursor-pointer"
+        class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 cursor-pointer"
       >
         Hitung
       </button>
       <button
         id="resetButton"
-        class="bg-red-500 text-white p-2 rounded hover-bg-red-600 cursor-pointer"
+        class="bg-red-500 text-white p-2 rounded hover:bg-red-600 cursor-pointer"
       >
         Reset
       </button>
       <button
         id="zoomInButton"
-        class="bg-green-500 text-white p-2 rounded hover-bg-green-600 cursor-pointer"
+        class="bg-green-500 text-white p-2 rounded hover:bg-green-600 cursor-pointer"
       >
         Zoom In
       </button>
       <button
         id="zoomOutButton"
-        class="bg-yellow-500 text-white p-2 rounded hover-bg-yellow-600 cursor-pointer"
+        class="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 cursor-pointer"
       >
         Zoom Out
       </button>
@@ -84,14 +84,73 @@
       const canvas = document.getElementById("quadraticChart");
       const ctx = canvas.getContext("2d");
       const historyElement = document.getElementById("history");
+
+      let initialDistance = 0;
+      let currentDistance = 0;
+      let isPinching = false;
+      let isPanning = false;
+      let panStartX = 0;
+      let panStartY = 0;
+
+      canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 2) {
+          isPinching = true;
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          initialDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+          );
+        } else if (e.touches.length === 1) {
+          isPanning = true;
+          const touch = e.touches[0];
+          panStartX = touch.clientX;
+          panStartY = touch.clientY;
+        }
+      });
+
+      canvas.addEventListener("touchmove", (e) => {
+        if (isPinching && e.touches.length === 2) {
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          currentDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+          );
+
+          const zoomFactor = currentDistance / initialDistance;
+
+          zoom *= zoomFactor;
+
+          initialDistance = currentDistance;
+
+          drawQuadraticChart();
+        } else if (isPanning && e.touches.length === 1) {
+          const touch = e.touches[0];
+          const panEndX = touch.clientX;
+          const panEndY = touch.clientY;
+
+          const deltaX = panEndX - panStartX;
+          const deltaY = panEndY - panStartY;
+
+          panStartX = panEndX;
+          panStartY = panEndY;
+
+          const panFactor = 1 / zoom;
+          drawQuadraticChart(panFactor * deltaX, panFactor * deltaY);
+        }
+      });
+
+      canvas.addEventListener("touchend", () => {
+        isPinching = false;
+        isPanning = false;
+      });
+
       let zoom = 1;
-      let isDragging = false;
-      let startX, startY;
-      let a, b, c; // Variabel untuk menyimpan nilai a, b, c
-      let roots = []; // Variabel untuk menyimpan akar-akar
+      let a, b, c;
+      let roots = [];
 
       function calculateQuadratic() {
-        // Implementasi perhitungan persamaan kuadrat
         a = parseFloat(document.getElementById("a").value);
         b = parseFloat(document.getElementById("b").value);
         c = parseFloat(document.getElementById("c").value);
@@ -155,27 +214,27 @@
         extremePointElement.textContent = "";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         historyElement.innerHTML = "";
-        a = b = c = undefined; // Reset nilai a, b, c
-        roots = []; // Reset akar-akar
+        a = b = c = undefined;
+        roots = [];
       });
 
       zoomInButton.addEventListener("click", function () {
-        zoom *= 1.5; // Faktor perbesaran
+        zoom *= 1.5;
         drawQuadraticChart();
       });
 
       zoomOutButton.addEventListener("click", function () {
-        zoom /= 1.5; // Faktor perkecilan
+        zoom /= 1.5;
         drawQuadraticChart();
       });
 
-      function drawQuadraticChart() {
+      function drawQuadraticChart(panX = 0, panY = 0) {
         if (
           typeof a === "undefined" ||
           typeof b === "undefined" ||
           typeof c === "undefined"
         ) {
-          return; // Tidak menggambar jika nilai a, b, atau c belum diinput
+          return;
         }
 
         const data = [];
@@ -214,7 +273,6 @@
           );
         }
 
-        // Tambahkan garis putus-putus vertikal di titik ekstremum
         ctx.setLineDash([5, 5]);
         ctx.strokeStyle = "red";
         const extremeX = -b / (2 * a);
@@ -243,12 +301,12 @@
         for (let i = 0; i < data.length - 1; i++) {
           ctx.beginPath();
           ctx.moveTo(
-            data[i].x * 20 * zoom + canvas.width / 2,
-            -data[i].y * 20 * zoom + canvas.height / 2
+            data[i].x * 20 * zoom + canvas.width / 2 + panX,
+            -data[i].y * 20 * zoom + canvas.height / 2 + panY
           );
           ctx.lineTo(
-            data[i + 1].x * 20 * zoom + canvas.width / 2,
-            -data[i + 1].y * 20 * zoom + canvas.height / 2
+            data[i + 1].x * 20 * zoom + canvas.width / 2 + panX,
+            -data[i + 1].y * 20 * zoom + canvas.height / 2 + panY
           );
           ctx.stroke();
         }
@@ -261,73 +319,6 @@
         resultElement.textContent = "";
         extremePointElement.textContent = "";
       }
-
-      canvas.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        startX = e.clientX - canvas.getBoundingClientRect().left;
-        startY = e.clientY - canvas.getBoundingClientRect().top;
-      });
-
-      canvas.addEventListener("mousemove", (e) => {
-        if (isDragging) {
-          const mouseX = e.clientX - canvas.getBoundingClientRect().left;
-          const mouseY = e.clientY - canvas.getBoundingClientRect().top;
-          const deltaX = mouseX - startX;
-          const deltaY = mouseY - startY;
-          startX = mouseX;
-          startY = mouseY;
-
-          // Geser kanvas
-          canvas.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-        }
-      });
-
-      canvas.addEventListener("mouseup", () => {
-        isDragging = false;
-      });
-
-      let initialDistance = 0;
-      let currentDistance = 0;
-      let isPinching = false;
-
-      canvas.addEventListener("touchstart", (e) => {
-        if (e.touches.length === 2) {
-          isPinching = true;
-          const touch1 = e.touches[0];
-          const touch2 = e.touches[1];
-          initialDistance = Math.hypot(
-            touch2.clientX - touch1.clientX,
-            touch2.clientY - touch1.clientY
-          );
-        }
-      });
-
-      canvas.addEventListener("touchmove", (e) => {
-        if (isPinching && e.touches.length === 2) {
-          const touch1 = e.touches[0];
-          const touch2 = e.touches[1];
-          currentDistance = Math.hypot(
-            touch2.clientX - touch1.clientX,
-            touch2.clientY - touch1.clientY
-          );
-
-          // Menghitung faktor perbesaran berdasarkan perubahan jarak
-          const zoomFactor = currentDistance / initialDistance;
-
-          // Perbarui faktor perbesaran kanvas
-          zoom *= zoomFactor;
-
-          // Atur ulang nilai awal
-          initialDistance = currentDistance;
-
-          // Gambar ulang kanvas dengan faktor perbesaran yang baru
-          drawQuadraticChart();
-        }
-      });
-
-      canvas.addEventListener("touchend", () => {
-        isPinching = false;
-      });
     </script>
   </body>
 </html>
