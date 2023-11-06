@@ -17,6 +17,61 @@ let panStartX = 0;
 let panStartY = 0;
 let offsetX = 0;
 let offsetY = 0;
+let touchStartDistance = 0;
+let touchEndDistance = 0;
+
+canvas.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 2) {
+    isPinching = true;
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    touchStartDistance = Math.hypot(
+      touch2.clientX - touch1.clientX,
+      touch2.clientY - touch1.clientY
+    );
+  } else if (e.touches.length === 1) {
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
+  }
+});
+
+canvas.addEventListener("touchmove", (e) => {
+  if (isPinching && e.touches.length === 2) {
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    touchEndDistance = Math.hypot(
+      touch2.clientX - touch1.clientX,
+      touch2.clientY - touch1.clientY
+    );
+
+    // Calculate zoom factor based on distance change
+    const zoomFactor = touchEndDistance / touchStartDistance;
+
+    // Update canvas zoom factor
+    zoom *= zoomFactor;
+
+    // Reset initial value
+    touchStartDistance = touchEndDistance;
+
+    // Redraw the canvas with the new zoom factor
+    drawQuadraticChart();
+  } else if (isPanning && e.touches.length === 1) {
+    const panEndX = e.touches[0].clientX;
+    const panEndY = e.touches[0].clientY;
+    offsetX += panEndX - panStartX;
+    offsetY += panEndY - panStartY;
+    panStartX = panEndX;
+    panStartY = panEndY;
+
+    drawQuadraticChart();
+  }
+});
+
+canvas.addEventListener("touchend", () => {
+  isPinching = false;
+  isPanning = false;
+});
 
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
