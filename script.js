@@ -12,6 +12,12 @@ let initialDistance = 0;
 let currentDistance = 0;
 let isPinching = false;
 
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let offsetX = 0;
+let offsetY = 0;
+
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
     isPinching = true;
@@ -21,6 +27,10 @@ canvas.addEventListener("touchstart", (e) => {
       touch2.clientX - touch1.clientX,
       touch2.clientY - touch1.clientY
     );
+  } else if (e.touches.length === 1) {
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
   }
 });
 
@@ -33,27 +43,37 @@ canvas.addEventListener("touchmove", (e) => {
       touch2.clientY - touch1.clientY
     );
 
-    // Menghitung faktor perbesaran berdasarkan perubahan jarak
+    // Calculate zoom factor based on distance change
     const zoomFactor = currentDistance / initialDistance;
 
-    // Perbarui faktor perbesaran kanvas
+    // Update canvas zoom factor
     zoom *= zoomFactor;
 
-    // Atur ulang nilai awal
+    // Reset initial value
     initialDistance = currentDistance;
 
-    // Gambar ulang kanvas dengan faktor perbesaran yang baru
+    // Redraw the canvas with the new zoom factor
+    drawQuadraticChart();
+  } else if (isPanning && e.touches.length === 1) {
+    const panEndX = e.touches[0].clientX;
+    const panEndY = e.touches[0].clientY;
+    offsetX += panEndX - panStartX;
+    offsetY += panEndY - panStartY;
+    panStartX = panEndX;
+    panStartY = panEndY;
+
     drawQuadraticChart();
   }
 });
 
 canvas.addEventListener("touchend", () => {
   isPinching = false;
+  isPanning = false;
 });
 
 let zoom = 1;
-let a, b, c; // Variabel untuk menyimpan nilai a, b, c
-let roots = []; // Variabel untuk menyimpan akar-akar
+let a, b, c; // Variables to store the values of a, b, c
+let roots = []; // Variables to store roots
 
 function calculateQuadratic() {
   a = parseFloat(document.getElementById("a").value);
@@ -62,6 +82,8 @@ function calculateQuadratic() {
 
   if (isNaN(a) || isNaN(b) || isNaN(c)) {
     resultElement.textContent = "Harap masukkan nilai a, b, dan c yang valid.";
+    zoomInButton.disabled = true;
+    zoomOutButton.disabled = true;
     return;
   }
 
@@ -85,6 +107,8 @@ function calculateQuadratic() {
     roots = [root1, root2];
     drawQuadraticChart();
     addToHistory(a, b, c, result, extremeResult);
+    zoomInButton.disabled = false;
+    zoomOutButton.disabled = false;
   } else if (discriminant === 0) {
     const root = -b / (2 * a);
     const result = `Satu akar ganda: x = ${root.toFixed(2)}`;
@@ -98,6 +122,8 @@ function calculateQuadratic() {
     roots = [root];
     drawQuadraticChart();
     addToHistory(a, b, c, result, extremeResult);
+    zoomInButton.disabled = false;
+    zoomOutButton.disabled = false;
   } else {
     const result = "Persamaan tidak memiliki akar real.";
     resultElement.textContent = result;
@@ -105,6 +131,8 @@ function calculateQuadratic() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     addToHistory(a, b, c, result, "");
     roots = [];
+    zoomInButton.disabled = true;
+    zoomOutButton.disabled = true;
   }
 }
 
@@ -118,17 +146,17 @@ resetButton.addEventListener("click", function () {
   extremePointElement.textContent = "";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   historyElement.innerHTML = "";
-  a = b = c = undefined; // Reset nilai a, b, c
-  roots = []; // Reset akar-akar
+  a = b = c = undefined; // Reset values of a, b, c
+  roots = []; // Reset roots
 });
 
 zoomInButton.addEventListener("click", function () {
-  zoom *= 1.5; // Faktor perbesaran
+  zoom *= 1.5; // Zoom factor
   drawQuadraticChart();
 });
 
 zoomOutButton.addEventListener("click", function () {
-  zoom /= 1.5; // Faktor perkecilan
+  zoom /= 1.5; // Zoom factor
   drawQuadraticChart();
 });
 
@@ -138,7 +166,7 @@ function drawQuadraticChart() {
     typeof b === "undefined" ||
     typeof c === "undefined"
   ) {
-    return; // Tidak menggambar jika nilai a, b, atau c belum diinput
+    return; // Do not draw if values of a, b, or c have not been input
   }
 
   const data = [];
@@ -177,7 +205,7 @@ function drawQuadraticChart() {
     );
   }
 
-  // Tambahkan garis putus-putus vertikal di titik ekstremum
+  // Add vertical dashed lines at the extreme point
   ctx.setLineDash([5, 5]);
   ctx.strokeStyle = "red";
   const extremeX = -b / (2 * a);
@@ -187,7 +215,7 @@ function drawQuadraticChart() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "red"; // Warna titik merah untuk titik ekstremum
+  ctx.fillStyle = "red"; // Red color for the extreme point
   const extremeY = a * extremeX * extremeX + b * extremeX + c;
   ctx.beginPath();
   ctx.arc(
@@ -198,7 +226,7 @@ function drawQuadraticChart() {
     Math.PI * 2
   );
   ctx.fill();
-  ctx.fillStyle = "black"; // Kembali ke warna hitam
+  ctx.fillStyle = "black"; // Back to black color
 
   ctx.fillStyle = "black";
   ctx.beginPath();
