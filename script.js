@@ -73,59 +73,6 @@ canvas.addEventListener("touchend", () => {
   isPanning = false;
 });
 
-canvas.addEventListener("touchstart", (e) => {
-  if (e.touches.length === 2) {
-    isPinching = true;
-    const touch1 = e.touches[0];
-    const touch2 = e.touches[1];
-    initialDistance = Math.hypot(
-      touch2.clientX - touch1.clientX,
-      touch2.clientY - touch1.clientY
-    );
-  } else if (e.touches.length === 1) {
-    isPanning = true;
-    panStartX = e.touches[0].clientX;
-    panStartY = e.touches[0].clientY;
-  }
-});
-
-canvas.addEventListener("touchmove", (e) => {
-  if (isPinching && e.touches.length === 2) {
-    const touch1 = e.touches[0];
-    const touch2 = e.touches[1];
-    currentDistance = Math.hypot(
-      touch2.clientX - touch1.clientX,
-      touch2.clientY - touch1.clientY
-    );
-
-    // Calculate zoom factor based on distance change
-    const zoomFactor = currentDistance / initialDistance;
-
-    // Update canvas zoom factor
-    zoom *= zoomFactor;
-
-    // Reset initial value
-    initialDistance = currentDistance;
-
-    // Redraw the canvas with the new zoom factor
-    drawQuadraticChart();
-  } else if (isPanning && e.touches.length === 1) {
-    const panEndX = e.touches[0].clientX;
-    const panEndY = e.touches[0].clientY;
-    offsetX += panEndX - panStartX;
-    offsetY += panEndY - panStartY;
-    panStartX = panEndX;
-    panStartY = panEndY;
-
-    drawQuadraticChart();
-  }
-});
-
-canvas.addEventListener("touchend", () => {
-  isPinching = false;
-  isPanning = false;
-});
-
 let zoom = 1;
 let a, b, c; // Variables to store the values of a, b, c
 let roots = []; // Variables to store roots
@@ -139,6 +86,7 @@ function calculateQuadratic() {
     resultElement.textContent = "Harap masukkan nilai a, b, dan c yang valid.";
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
+    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
     return;
   }
 
@@ -164,6 +112,7 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
+    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
   } else if (discriminant === 0) {
     const root = -b / (2 * a);
     const result = `Satu akar ganda: x = ${root.toFixed(2)}`;
@@ -179,6 +128,7 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
+    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
   } else {
     const result = "Persamaan tidak memiliki akar real.";
     resultElement.textContent = result;
@@ -188,6 +138,7 @@ function calculateQuadratic() {
     roots = [];
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
+    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
   }
 }
 
@@ -203,6 +154,9 @@ resetButton.addEventListener("click", function () {
   historyElement.innerHTML = "";
   a = b = c = undefined; // Reset values of a, b, c
   roots = []; // Reset roots
+  zoomInButton.disabled = false;
+  zoomOutButton.disabled = false;
+  canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
 });
 
 zoomInButton.addEventListener("click", function () {
