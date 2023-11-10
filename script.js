@@ -20,10 +20,6 @@ let offsetY = 0;
 let touchStartDistance = 0;
 let touchEndDistance = 0;
 
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
     isPinching = true;
@@ -37,12 +33,6 @@ canvas.addEventListener("touchstart", (e) => {
     isPanning = true;
     panStartX = e.touches[0].clientX;
     panStartY = e.touches[0].clientY;
-  }
-
-  if (e.touches.length === 1) {
-    isDragging = true;
-    dragStartX = e.touches[0].clientX;
-    dragStartY = e.touches[0].clientY;
   }
 });
 
@@ -75,24 +65,12 @@ canvas.addEventListener("touchmove", (e) => {
     panStartY = panEndY;
 
     drawQuadraticChart();
-  } else if (isDragging && e.touches.length === 1) {
-    const dragEndX = e.touches[0].clientX;
-    const dragEndY = e.touches[0].clientY;
-
-    offsetX += dragEndX - dragStartX;
-    offsetY += dragEndY - dragStartY;
-
-    dragStartX = dragEndX;
-    dragStartY = dragEndY;
-
-    drawQuadraticChart();
   }
 });
 
 canvas.addEventListener("touchend", () => {
   isPinching = false;
   isPanning = false;
-  isDragging = false;
 });
 
 let zoom = 1;
@@ -105,10 +83,10 @@ function calculateQuadratic() {
   c = parseFloat(document.getElementById("c").value);
 
   if (isNaN(a) || isNaN(b) || isNaN(c)) {
-    resultElement.textContent = "Please enter valid values for a, b, and c.";
+    resultElement.textContent = "Harap masukkan nilai a, b, dan c yang valid.";
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
-    canvas.style.pointerEvents = "none"; // Disable interaction with canvas
+    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
     return;
   }
 
@@ -119,13 +97,13 @@ function calculateQuadratic() {
   if (discriminant > 0) {
     const root1 = (-b + Math.sqrt(discriminant)) / (2 * a);
     const root2 = (-b - Math.sqrt(discriminant)) / (2 * a);
-    const result = `Equation roots: x1 = ${root1.toFixed(
+    const result = `Akar-akar persamaan: x1 = ${root1.toFixed(
       2
-    )} and x2 = ${root2.toFixed(2)}`;
+    )} dan x2 = ${root2.toFixed(2)}`;
     resultElement.textContent = result;
     const extremeX = -b / (2 * a);
     const extremeY = a * extremeX * extremeX + b * extremeX + c;
-    const extremeResult = `Extreme Point: x = ${extremeX.toFixed(
+    const extremeResult = `Titik Ekstremum: x = ${extremeX.toFixed(
       2
     )}, y = ${extremeY.toFixed(2)}`;
     extremePointElement.textContent = extremeResult;
@@ -134,14 +112,14 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
-    canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
+    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
   } else if (discriminant === 0) {
     const root = -b / (2 * a);
-    const result = `One double root: x = ${root.toFixed(2)}`;
+    const result = `Satu akar ganda: x = ${root.toFixed(2)}`;
     resultElement.textContent = result;
     const extremeX = -b / (2 * a);
     const extremeY = a * extremeX * extremeX + b * extremeX + c;
-    const extremeResult = `Extreme Point: x = ${extremeX.toFixed(
+    const extremeResult = `Titik Ekstremum: x = ${extremeX.toFixed(
       2
     )}, y = ${extremeY.toFixed(2)}`;
     extremePointElement.textContent = extremeResult;
@@ -150,9 +128,9 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
-    canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
+    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
   } else {
-    const result = "The equation has no real roots.";
+    const result = "Persamaan tidak memiliki akar real.";
     resultElement.textContent = result;
     extremePointElement.textContent = "";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -160,7 +138,7 @@ function calculateQuadratic() {
     roots = [];
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
-    canvas.style.pointerEvents = "none"; // Disable interaction with canvas
+    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
   }
 }
 
@@ -178,7 +156,7 @@ resetButton.addEventListener("click", function () {
   roots = []; // Reset roots
   zoomInButton.disabled = false;
   zoomOutButton.disabled = false;
-  canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
+  canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
 });
 
 zoomInButton.addEventListener("click", function () {
@@ -291,7 +269,7 @@ function drawQuadraticChart() {
 
 function addToHistory(a, b, c, result, extremeResult) {
   const historyItem = document.createElement("li");
-  historyItem.innerHTML = `Equation: ${a}x^2 + ${b}x + ${c}<br>Result: ${result}<br>${extremeResult}`;
+  historyItem.innerHTML = `Persamaan: ${a}x^2 + ${b}x + ${c}<br>Hasil ${result}<br>${extremeResult}`;
   historyElement.appendChild(historyItem);
   resultElement.textContent = "";
   extremePointElement.textContent = "";
