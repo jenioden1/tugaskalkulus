@@ -17,6 +17,8 @@ let panStartX = 0;
 let panStartY = 0;
 let offsetX = 0;
 let offsetY = 0;
+let touchMoveX = 0;
+let touchMoveY = 0;
 let touchStartDistance = 0;
 let touchEndDistance = 0;
 
@@ -59,11 +61,20 @@ canvas.addEventListener("touchmove", (e) => {
   } else if (isPanning && e.touches.length === 1) {
     const panEndX = e.touches[0].clientX;
     const panEndY = e.touches[0].clientY;
-    offsetX += panEndX - panStartX;
-    offsetY += panEndY - panStartY;
+
+    // Calculate the movement distances
+    touchMoveX = panEndX - panStartX;
+    touchMoveY = panEndY - panStartY;
+
+    // Update the pan starting point
     panStartX = panEndX;
     panStartY = panEndY;
 
+    // Update the canvas offset based on the movement
+    offsetX += touchMoveX;
+    offsetY += touchMoveY;
+
+    // Redraw the canvas with the new offset
     drawQuadraticChart();
   }
 });
@@ -217,7 +228,7 @@ function drawQuadraticChart() {
   // Add vertical dashed lines at the extreme point
   ctx.setLineDash([5, 5]);
   ctx.strokeStyle = "red";
-  const extremeX = -b / (2 * a);
+  const extremeX = (-b + offsetX) / (2 * a);
   ctx.beginPath();
   ctx.moveTo(extremeX * 20 * zoom + canvas.width / 2, 0);
   ctx.lineTo(extremeX * 20 * zoom + canvas.width / 2, canvas.height);
@@ -225,7 +236,7 @@ function drawQuadraticChart() {
   ctx.setLineDash([]);
 
   ctx.fillStyle = "red"; // Red color for the extreme point
-  const extremeY = a * extremeX * extremeX + b * extremeX + c;
+  const extremeY = a * extremeX * extremeX + b * extremeX + c + offsetY;
   ctx.beginPath();
   ctx.arc(
     extremeX * 20 * zoom + canvas.width / 2,
@@ -241,8 +252,8 @@ function drawQuadraticChart() {
   ctx.beginPath();
   for (const root of roots) {
     ctx.arc(
-      root * 20 * zoom + canvas.width / 2,
-      canvas.height / 2,
+      (root + offsetX) * 20 * zoom + canvas.width / 2,
+      canvas.height / 2 - offsetY * 20 * zoom,
       6,
       0,
       Math.PI * 2
@@ -256,12 +267,12 @@ function drawQuadraticChart() {
   for (let i = 0; i < data.length - 1; i++) {
     ctx.beginPath();
     ctx.moveTo(
-      data[i].x * 20 * zoom + canvas.width / 2,
-      -data[i].y * 20 * zoom + canvas.height / 2
+      (data[i].x + offsetX) * 20 * zoom + canvas.width / 2,
+      -data[i].y * 20 * zoom + canvas.height / 2 + offsetY * 20 * zoom
     );
     ctx.lineTo(
-      data[i + 1].x * 20 * zoom + canvas.width / 2,
-      -data[i + 1].y * 20 * zoom + canvas.height / 2
+      (data[i + 1].x + offsetX) * 20 * zoom + canvas.width / 2,
+      -data[i + 1].y * 20 * zoom + canvas.height / 2 + offsetY * 20 * zoom
     );
     ctx.stroke();
   }
