@@ -17,10 +17,12 @@ let panStartX = 0;
 let panStartY = 0;
 let offsetX = 0;
 let offsetY = 0;
-let touchMoveX = 0;
-let touchMoveY = 0;
 let touchStartDistance = 0;
 let touchEndDistance = 0;
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
 
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
@@ -35,6 +37,12 @@ canvas.addEventListener("touchstart", (e) => {
     isPanning = true;
     panStartX = e.touches[0].clientX;
     panStartY = e.touches[0].clientY;
+  }
+
+  if (e.touches.length === 1) {
+    isDragging = true;
+    dragStartX = e.touches[0].clientX;
+    dragStartY = e.touches[0].clientY;
   }
 });
 
@@ -61,20 +69,22 @@ canvas.addEventListener("touchmove", (e) => {
   } else if (isPanning && e.touches.length === 1) {
     const panEndX = e.touches[0].clientX;
     const panEndY = e.touches[0].clientY;
-
-    // Calculate the movement distances
-    touchMoveX = panEndX - panStartX;
-    touchMoveY = panEndY - panStartY;
-
-    // Update the pan starting point
+    offsetX += panEndX - panStartX;
+    offsetY += panEndY - panStartY;
     panStartX = panEndX;
     panStartY = panEndY;
 
-    // Update the canvas offset based on the movement
-    offsetX += touchMoveX;
-    offsetY += touchMoveY;
+    drawQuadraticChart();
+  } else if (isDragging && e.touches.length === 1) {
+    const dragEndX = e.touches[0].clientX;
+    const dragEndY = e.touches[0].clientY;
 
-    // Redraw the canvas with the new offset
+    offsetX += dragEndX - dragStartX;
+    offsetY += dragEndY - dragStartY;
+
+    dragStartX = dragEndX;
+    dragStartY = dragEndY;
+
     drawQuadraticChart();
   }
 });
@@ -82,6 +92,7 @@ canvas.addEventListener("touchmove", (e) => {
 canvas.addEventListener("touchend", () => {
   isPinching = false;
   isPanning = false;
+  isDragging = false;
 });
 
 let zoom = 1;
@@ -94,10 +105,10 @@ function calculateQuadratic() {
   c = parseFloat(document.getElementById("c").value);
 
   if (isNaN(a) || isNaN(b) || isNaN(c)) {
-    resultElement.textContent = "Harap masukkan nilai a, b, dan c yang valid.";
+    resultElement.textContent = "Please enter valid values for a, b, and c.";
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
-    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
+    canvas.style.pointerEvents = "none"; // Disable interaction with canvas
     return;
   }
 
@@ -108,13 +119,13 @@ function calculateQuadratic() {
   if (discriminant > 0) {
     const root1 = (-b + Math.sqrt(discriminant)) / (2 * a);
     const root2 = (-b - Math.sqrt(discriminant)) / (2 * a);
-    const result = `Akar-akar persamaan: x1 = ${root1.toFixed(
+    const result = `Equation roots: x1 = ${root1.toFixed(
       2
-    )} dan x2 = ${root2.toFixed(2)}`;
+    )} and x2 = ${root2.toFixed(2)}`;
     resultElement.textContent = result;
     const extremeX = -b / (2 * a);
     const extremeY = a * extremeX * extremeX + b * extremeX + c;
-    const extremeResult = `Titik Ekstremum: x = ${extremeX.toFixed(
+    const extremeResult = `Extreme Point: x = ${extremeX.toFixed(
       2
     )}, y = ${extremeY.toFixed(2)}`;
     extremePointElement.textContent = extremeResult;
@@ -123,14 +134,14 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
-    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
+    canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
   } else if (discriminant === 0) {
     const root = -b / (2 * a);
-    const result = `Satu akar ganda: x = ${root.toFixed(2)}`;
+    const result = `One double root: x = ${root.toFixed(2)}`;
     resultElement.textContent = result;
     const extremeX = -b / (2 * a);
     const extremeY = a * extremeX * extremeX + b * extremeX + c;
-    const extremeResult = `Titik Ekstremum: x = ${extremeX.toFixed(
+    const extremeResult = `Extreme Point: x = ${extremeX.toFixed(
       2
     )}, y = ${extremeY.toFixed(2)}`;
     extremePointElement.textContent = extremeResult;
@@ -139,9 +150,9 @@ function calculateQuadratic() {
     addToHistory(a, b, c, result, extremeResult);
     zoomInButton.disabled = false;
     zoomOutButton.disabled = false;
-    canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
+    canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
   } else {
-    const result = "Persamaan tidak memiliki akar real.";
+    const result = "The equation has no real roots.";
     resultElement.textContent = result;
     extremePointElement.textContent = "";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -149,7 +160,7 @@ function calculateQuadratic() {
     roots = [];
     zoomInButton.disabled = true;
     zoomOutButton.disabled = true;
-    canvas.style.pointerEvents = "none"; // Menonaktifkan interaksi dengan canvas
+    canvas.style.pointerEvents = "none"; // Disable interaction with canvas
   }
 }
 
@@ -167,7 +178,7 @@ resetButton.addEventListener("click", function () {
   roots = []; // Reset roots
   zoomInButton.disabled = false;
   zoomOutButton.disabled = false;
-  canvas.style.pointerEvents = "auto"; // Mengaktifkan kembali interaksi dengan canvas
+  canvas.style.pointerEvents = "auto"; // Enable interaction with canvas
 });
 
 zoomInButton.addEventListener("click", function () {
@@ -228,7 +239,7 @@ function drawQuadraticChart() {
   // Add vertical dashed lines at the extreme point
   ctx.setLineDash([5, 5]);
   ctx.strokeStyle = "red";
-  const extremeX = (-b + offsetX) / (2 * a);
+  const extremeX = -b / (2 * a);
   ctx.beginPath();
   ctx.moveTo(extremeX * 20 * zoom + canvas.width / 2, 0);
   ctx.lineTo(extremeX * 20 * zoom + canvas.width / 2, canvas.height);
@@ -236,7 +247,7 @@ function drawQuadraticChart() {
   ctx.setLineDash([]);
 
   ctx.fillStyle = "red"; // Red color for the extreme point
-  const extremeY = a * extremeX * extremeX + b * extremeX + c + offsetY;
+  const extremeY = a * extremeX * extremeX + b * extremeX + c;
   ctx.beginPath();
   ctx.arc(
     extremeX * 20 * zoom + canvas.width / 2,
@@ -252,8 +263,8 @@ function drawQuadraticChart() {
   ctx.beginPath();
   for (const root of roots) {
     ctx.arc(
-      (root + offsetX) * 20 * zoom + canvas.width / 2,
-      canvas.height / 2 - offsetY * 20 * zoom,
+      root * 20 * zoom + canvas.width / 2,
+      canvas.height / 2,
       6,
       0,
       Math.PI * 2
@@ -267,12 +278,12 @@ function drawQuadraticChart() {
   for (let i = 0; i < data.length - 1; i++) {
     ctx.beginPath();
     ctx.moveTo(
-      (data[i].x + offsetX) * 20 * zoom + canvas.width / 2,
-      -data[i].y * 20 * zoom + canvas.height / 2 + offsetY * 20 * zoom
+      data[i].x * 20 * zoom + canvas.width / 2,
+      -data[i].y * 20 * zoom + canvas.height / 2
     );
     ctx.lineTo(
-      (data[i + 1].x + offsetX) * 20 * zoom + canvas.width / 2,
-      -data[i + 1].y * 20 * zoom + canvas.height / 2 + offsetY * 20 * zoom
+      data[i + 1].x * 20 * zoom + canvas.width / 2,
+      -data[i + 1].y * 20 * zoom + canvas.height / 2
     );
     ctx.stroke();
   }
@@ -280,7 +291,7 @@ function drawQuadraticChart() {
 
 function addToHistory(a, b, c, result, extremeResult) {
   const historyItem = document.createElement("li");
-  historyItem.innerHTML = `Persamaan: ${a}x^2 + ${b}x + ${c}<br>Hasil ${result}<br>${extremeResult}`;
+  historyItem.innerHTML = `Equation: ${a}x^2 + ${b}x + ${c}<br>Result: ${result}<br>${extremeResult}`;
   historyElement.appendChild(historyItem);
   resultElement.textContent = "";
   extremePointElement.textContent = "";
