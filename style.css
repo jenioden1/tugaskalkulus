@@ -65,4 +65,7 @@ body {
   .calculator-container {
     max-width: 100%;
   }
+  body {
+    height: 120vh;
+  }
 }
